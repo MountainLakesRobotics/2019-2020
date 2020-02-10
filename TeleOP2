@@ -1,0 +1,105 @@
+package org.firstinspires.ftc.teamcode.TeleOp;
+
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import org.firstinspires.ftc.teamcode.Robot.Robot2;
+
+@TeleOp(name="TeleOP 2.05", group="TeleOP")
+public class TeleOP2 extends OpMode {
+    private Robot2 robot = new Robot2();
+    private ElapsedTime runtime = new ElapsedTime();
+    private boolean buttonControlCollect = true;
+    private boolean dualcommands = true;
+    private boolean mods = true;
+
+
+    @Override
+    public void init() {
+        robot.init(hardwareMap);
+        telemetry.addData("Status", "Initialized");
+    }
+
+
+    @Override
+    public void init_loop() {
+    }
+
+    @Override
+    public void start() {
+        runtime.reset();
+    }
+
+    //controler button layout
+    // Gamepad 1: joysticks for drive, a,b for clamp, triggers for collection, x and y to change true front, bumpers for lift
+    // Gamepad 2: joysticks for dynamic collection (joysticks buttons), triggers for regular collection, a,b for claw, x and y for cap
+    // dpad up and down for lift and right and left for extension (bumpers also lift)
+    // start to reset clamps to inital pos, start to reset claw to inital pos
+
+
+    @Override
+    public void loop() {
+        //Main drive
+        robot.frontRightDrive.setPower(gamepad1.right_stick_y);
+        robot.backRightDrive.setPower(gamepad1.right_stick_y);
+        robot.frontLeftDrive.setPower(gamepad1.left_stick_y);
+        robot.backLeftDrive.setPower(gamepad1.left_stick_y);
+
+        //Slow drive
+        if (gamepad1.dpad_right)
+            robot.strafe(-0.75);
+        else if (gamepad1.dpad_left)
+            robot.strafe(0.75);
+        else if (gamepad1.dpad_up)
+            robot.drive(-0.5);
+        else if (gamepad1.dpad_down)
+            robot.drive(0.5);
+
+        //Drive commands
+        robot.reverseTrueFront(gamepad1.x, gamepad1.y); // x normal drive, y reversed drive
+
+        //Clamping commands
+        robot.controlClamp( gamepad1.a, gamepad1.b, gamepad1.start); // up position, down position, initial position
+
+        //Lifting commands
+        robot.controlExtend(gamepad2.dpad_left, gamepad2.dpad_right); // forward, backward
+
+        robot.controlClaw(gamepad2.a, gamepad2.b, gamepad2.a); // closed, open initial
+
+        robot.controlLift(1, gamepad2.dpad_up||gamepad2.right_bumper, gamepad2.dpad_down||gamepad2.left_bumper); //lift for driver 2 if allowed
+
+        if(dualcommands)
+            robot.controlLift(1, gamepad1.right_bumper, gamepad1.left_bumper);  //lift for driver 1 if allowed
+
+        //Collection commands
+        if(buttonControlCollect) {
+            robot.controlCollect(0.75, (gamepad2.right_trigger > 0.1), (gamepad2.left_trigger  > 0.1));  //power, forward, reverse
+
+            if(dualcommands)
+                robot.controlCollect(0.75, (gamepad1.right_trigger > 0.1), (gamepad1.left_trigger  > 0.1));  //power, forward, reverse
+
+        }
+        else {
+            robot.rightCollection.setPower(gamepad2.right_stick_y);
+            robot.leftCollection.setPower(gamepad2.left_stick_y);
+        }
+
+        if(gamepad2.right_stick_button) // exclusive to driver 2
+            buttonControlCollect = true;
+        else if (gamepad2.left_stick_button)
+            buttonControlCollect = false;
+
+        //Other commands
+        if(gamepad2.x)
+            mods = false;
+        else if(gamepad2.y)
+            mods = true;
+    }
+
+    /*
+     * Code to run ONCE after the driver hits STOP
+     */
+    @Override
+    public void stop() {
+    }
+}
